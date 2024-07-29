@@ -2083,6 +2083,7 @@ static u32 mtk_xdp_run(struct mtk_eth *eth, struct mtk_rx_ring *ring,
 	if (!prog)
 		goto out;
 
+	net_prefetchw(xdp->data_hard_start);
 	act = bpf_prog_run_xdp(prog, xdp);
 	switch (act) {
 	case XDP_PASS:
@@ -2158,6 +2159,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 
 		idx = NEXT_DESP_IDX(ring->calc_idx, ring->dma_size);
 		rxd = ring->dma + idx * eth->soc->rx.desc_size;
+		prefetch(rxd);
 		data = ring->data[idx];
 
 		if (!mtk_rx_get_desc(eth, &trxd, rxd))
@@ -2225,6 +2227,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 			if (ret != XDP_PASS)
 				goto skip_rx;
 
+			net_prefetch(xdp.data_meta);
 			skb = build_skb(data, PAGE_SIZE);
 			if (unlikely(!skb)) {
 				page_pool_put_full_page(ring->page_pool,
@@ -2233,6 +2236,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 				goto skip_rx;
 			}
 
+			net_prefetchw(skb->data);
 			skb_reserve(skb, xdp.data - xdp.data_hard_start);
 			skb_put(skb, xdp.data_end - xdp.data);
 			skb_mark_for_recycle(skb);
@@ -2263,6 +2267,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 			dma_unmap_single(eth->dma_dev, ((u64)trxd.rxd1 | addr64),
 					 ring->buf_size, DMA_FROM_DEVICE);
 
+			net_prefetch(data + NET_SKB_PAD + eth->ip_align);
 			skb = build_skb(data, ring->frag_size);
 			if (unlikely(!skb)) {
 				netdev->stats.rx_dropped++;
@@ -2270,7 +2275,8 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 				goto skip_rx;
 			}
 
-			skb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN);
+			net_prefetchw(skb->data);
+			skb_reserve(skb, NET_SKB_PAD + eth->ip_align);
 			skb_put(skb, pktlen);
 		}
 
