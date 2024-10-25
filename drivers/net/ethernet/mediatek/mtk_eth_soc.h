@@ -216,7 +216,7 @@
 
 #define MTK_DEC_WCOMP		BIT(28)
 #define MTK_PDMA_RESV_BUF	(0x40 << 16)
-#define MTK_PDMA_MUTLI_CNT	(0xf << 12)
+#define MTK_PDMA_MULTI_CNT	(0xf << 12)
 #define MTK_MULTI_EN_V2		BIT(11)
 #define MTK_CHK_DDONE		BIT(10)
 
