@@ -1638,6 +1638,6 @@ int mtk_flow_offload_cmd(struct mtk_eth *eth, struct flow_cls_offload *cls,
 			 int ppe_index);
 void mtk_flow_offload_cleanup(struct mtk_eth *eth, struct list_head *list);
 void mtk_eth_set_dma_device(struct mtk_eth *eth, struct device *dma_dev);
-
+u32 mtk_rss_indr_table(struct mtk_rss_params *rss_params, int index);
 
 #endif /* MTK_ETH_H */

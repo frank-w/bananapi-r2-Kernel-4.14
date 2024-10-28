@@ -31,6 +31,7 @@
 #include <net/page_pool/helpers.h>
 
 #include "mtk_eth_soc.h"
+#include "mtk_eth_dbg.h"
 #include "mtk_wed.h"
 
 static int mtk_msg_level = -1;
@@ -3245,7 +3246,7 @@ printk(KERN_ALERT "DEBUG: Passed %s %d\n",__FUNCTION__,__LINE__);
 	return 0;
 }
 
-static u32 mtk_rss_indr_table(struct mtk_rss_params *rss_params, int index)
+u32 mtk_rss_indr_table(struct mtk_rss_params *rss_params, int index)
 {
 	u32 val = 0;
 	int i;
@@ -5726,6 +5727,9 @@ static int mtk_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, eth);
 	schedule_delayed_work(&eth->reset.monitor_work,
 			      MTK_DMA_MONITOR_TIMEOUT);
+
+	mtketh_debugfs_init(eth);
+	debug_proc_init(eth);
 
 	return 0;
 
