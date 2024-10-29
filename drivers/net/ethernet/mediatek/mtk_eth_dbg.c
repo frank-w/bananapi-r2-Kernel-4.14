@@ -28,7 +28,8 @@
 #include "mtk_eth_dbg.h"
 
 struct proc_dir_entry *proc_reg_dir;
-static struct proc_dir_entry *proc_rss_ctrl;
+static struct proc_dir_entry *proc_rss_ctrl, *proc_dbg_regs;
+
 u32 cur_rss_num;
 struct mtk_eth_debug {
 	struct dentry *root;
@@ -37,6 +38,41 @@ struct mtk_eth_debug {
 };
 struct mtk_eth *g_eth;
 struct mtk_eth_debug eth_debug;
+
+static int dbg_regs_read(struct seq_file *seq, void *v)
+{
+	struct mtk_eth *eth = g_eth;
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
+	u32 i;
+	seq_puts(seq, "   <<DEBUG REG DUMP>>\n");
+	seq_printf(seq, "| FE_INT_STA	: %08x |\n",
+		   mtk_r32(eth, MTK_FE_INT_STATUS));
+	if (mtk_is_netsys_v2_or_greater(eth))
+		seq_printf(seq, "| FE_INT_STA2	: %08x |\n",
+			   mtk_r32(eth, MTK_FE_INT_STATUS2));
+
+	if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
+		for (i = 1; i < eth->soc->rss_num; i++) {
+			seq_printf(seq, "| PDMA_CRX_IDX%d	: %08x |\n",
+				   i, mtk_r32(eth, MTK_PRX_CRX_IDX_CFG(i)));
+			seq_printf(seq, "| PDMA_DRX_IDX%d	: %08x |\n",
+				   i, mtk_r32(eth, MTK_PRX_DRX_IDX_CFG(i)));
+		}
+	}
+
+	return 0;
+}
+static int dbg_regs_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, dbg_regs_read, 0);
+}
+
+static const struct proc_ops dbg_regs_fops = {
+	.proc_open = dbg_regs_open,
+	.proc_read = seq_read,
+	.proc_lseek = seq_lseek,
+	.proc_release = single_release
+};
 
 static int mtk_rss_set_indr_tbl(struct mtk_eth *eth, int num)
 {
@@ -122,6 +158,10 @@ int debug_proc_init(struct mtk_eth *eth)
 	g_eth = eth;
 	if (!proc_reg_dir)
 		proc_reg_dir = proc_mkdir(PROCREG_DIR, NULL);
+
+	proc_dbg_regs = proc_create(PROCREG_DBG_REGS, 0, proc_reg_dir, &dbg_regs_fops);
+	if (!proc_dbg_regs)
+		pr_notice("!! FAIL to create %s PROC !!\n", PROCREG_DBG_REGS);
 
 	if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
 		proc_rss_ctrl =
