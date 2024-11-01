@@ -174,6 +174,18 @@
 #define MTK_CDME1_THRES		0x1658
 #define MTK_CDMM_THRES		0x165c
 
+/* PDMA RX Base Pointer Register */
+#define MTK_PRX_BASE_PTR0	(reg_map->pdma.rss_glo_cfg + 0x100)
+#define MTK_PRX_BASE_PTR_CFG(x)	(MTK_PRX_BASE_PTR0 + (x * 0x10))
+
+/* PDMA RX CPU Pointer Register */
+#define MTK_PRX_CRX_IDX0	(MTK_PRX_BASE_PTR0 + 0x08)
+#define MTK_PRX_CRX_IDX_CFG(x)	(MTK_PRX_CRX_IDX0 + (x * 0x10))
+
+/* PDMA RX DMA Pointer Register */
+#define MTK_PRX_DRX_IDX0	(MTK_PRX_BASE_PTR0 + 0x0c)
+#define MTK_PRX_DRX_IDX_CFG(x)	(MTK_PRX_DRX_IDX0 + (x * 0x10))
+
 /* PDMA HW LRO Control Registers */
 #define MTK_HW_LRO_RING_NUM		(mtk_is_netsys_v2_or_greater(eth) ? 4 : 3)
 #define MTK_HW_LRO_RING(x)		((x) + (mtk_is_netsys_v2_or_greater(eth) ? 4 : 1))
