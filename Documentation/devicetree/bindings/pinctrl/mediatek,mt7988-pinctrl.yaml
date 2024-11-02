@@ -88,11 +88,17 @@ patternProperties:
           "pwm0"               "pwm"              57
           "pwm1"               "pwm"              21
           "pwm2"               "pwm"              80
+          "pwm2_0"             "pwm"              58
           "pwm3"               "pwm"              81
+          "pwm3_0"             "pwm"              59
           "pwm4"               "pwm"              82
+          "pwm4_0"             "pwm"              60
           "pwm5"               "pwm"              83
+          "pwm5_0"             "pwm"              61
           "pwm6"               "pwm"              69
+          "pwm6_0"             "pwm"              62
           "pwm7"               "pwm"              70
+          "pwm7_0"             "pwm"              4
           "dfd"                "dfd"              0, 1, 2, 3, 4
           "xfi_phy0_i2c0"      "i2c"              0, 1
           "xfi_phy1_i2c0"      "i2c"              0, 1
@@ -311,7 +317,8 @@ patternProperties:
               properties:
                 groups:
                   items:
-                    enum: [pwm0, pwm1, pwm2, pwm3, pwm4, pwm5, pwm6, pwm7]
+                    enum: [pwm0, pwm1, pwm2, pwm2_0, pwm3, pwm3_0, pwm4, pwm4_0, pwm5, pwm5_0,
+                           pwm6, pwm6_0, pwm7, pwm7_0]
                   maxItems: 2
           - if:
               properties:
