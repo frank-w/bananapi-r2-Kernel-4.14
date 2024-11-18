@@ -608,10 +608,14 @@ static int mtk_pinconf_bias_set_pd(struct mtk_pinctrl *hw,
 	if (arg != MTK_DISABLE && arg != MTK_ENABLE)
 		return -EINVAL;
 
+	/* Either this */
 	if (arg == MTK_DISABLE || pullup)
 		pd = 0;
 	else if (!pullup)
 		pd = 1;
+
+	/* Or this (but it's probably a bit too cryptic) */
+	//pd = !(arg == MTK_DISABLE || pullup);
 
 	return mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_PD, pd);
 
