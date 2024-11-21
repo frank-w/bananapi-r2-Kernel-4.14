@@ -73,7 +73,7 @@ jobs:
           bash build.sh cryptodev
       - name: Pack for bananapi-r2
         run: |
-          bash build.sh pack_debs
+          #bash build.sh pack_debs
           bash build.sh pack
 
       - name: Build for bananapi-r64
@@ -84,7 +84,7 @@ jobs:
           bash build.sh cryptodev
       - name: Pack for bananapi-r64
         run: |
-          bash build.sh pack_debs
+          #bash build.sh pack_debs
           bash build.sh pack
 
       - name: Build for bananapi-r2pro
@@ -94,7 +94,7 @@ jobs:
           bash build.sh build
       - name: Pack for bananapi-r2pro
         run: |
-          bash build.sh pack_debs
+          #bash build.sh pack_debs
           bash build.sh pack
 
       - name: Build for bananapi-r3 (mini)
@@ -104,7 +104,7 @@ jobs:
           bash build.sh build
       - name: Pack for bananapi-r3
         run: |
-          bash build.sh pack_debs
+          #bash build.sh pack_debs
           bash build.sh pack
 
       - name: Build for bananapi-r4
@@ -114,7 +114,7 @@ jobs:
           bash build.sh build
       - name: Pack for bananapi-r4
         run: |
-          bash build.sh pack_debs
+          #bash build.sh pack_debs
           bash build.sh pack
 
       - name: Upload binaries to release
@@ -136,5 +136,5 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: |
             ../SD/*
-            ../*.deb
             *.itb
+            #../*.deb
