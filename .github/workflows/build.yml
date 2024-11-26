@@ -66,7 +66,7 @@ jobs:
       - name: Install depencies
         run: |
           sudo apt update
-          sudo apt install ccache libssl-dev libssl-dev:armhf libssl-dev:arm64 u-boot-tools python3-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler libncurses5-dev libelf-dev
+          sudo apt install ccache libssl-dev:armhf libssl-dev:arm64 u-boot-tools python3-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler libncurses5-dev libelf-dev
 
       - name: Generate Changelog
         run: |
