@@ -60,10 +60,11 @@ jobs:
       - name: update apt-repos (u24)
         if: env.UBUNTU_MAJOR_VERSION == '24'
         run: |
-          head -5 /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ports.sources
+          sudo cp /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ports.sources
           sudo sed -i.bak -e 's/^\(Suites:.*\)$/\1\nArchitectures: amd64 i386/' /etc/apt/sources.list.d/ubuntu.sources
           sudo sed -i.bak -e 's/^URIs:.*$/URIs: http:\/\/ports.ubuntu.com\/ubuntu-ports\//' /etc/apt/sources.list.d/ports.sources
           sudo sed -i -e 's/^\(Suites:.*\)$/\1\nArchitectures: armhf arm64/' /etc/apt/sources.list.d/ports.sources
+          cat /etc/apt/sources.list.d/ports.sources
 
       - name: Install depencies
         run: |
