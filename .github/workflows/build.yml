@@ -35,7 +35,28 @@ jobs:
         with:
           fetch-depth: 10
 
-      - name: update apt-repos
+      - name: Setup env
+        run: |
+          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
+          echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "UBUNTU_MAJOR_VERSION=$(cat /etc/issue | head -1|sed -e 's/^Ubuntu \([0-9]\+\).*$/\1/')" >> $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo $BRANCH $KERNELVER $DT
+          echo $UBUNTU_MAJOR_VERSION
+
+      - name: update apt-repos (u22)
+        if: env.UBUNTU_MAJOR_VERSION == '22'
+        run: |
+          cat /etc/apt/sources.list
+          #deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu/ jammy main universe
+          echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy main universe" | sudo tee -a /etc/apt/sources.list
+
+
+      - name: update apt-repos (u24)
+        if: env.UBUNTU_MAJOR_VERSION == '24'
         run: |
           head -5 /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ports.sources
           sudo sed -i.bak -e 's/^\(Suites:.*\)$/\1\nArchitectures: amd64 i386/' /etc/apt/sources.list.d/ubuntu.sources
@@ -47,21 +68,11 @@ jobs:
           sudo apt update
           sudo apt install ccache libssl-dev libssl-dev:armhf libssl-dev:arm64 u-boot-tools python3-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler libncurses5-dev libelf-dev
 
-      - name: Setup env
-        run: |
-          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
-          echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
-          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
       - name: Generate Changelog
         run: |
           echo "# CI-Build for $BRANCH ($KERNELVER)" > ${{ github.workspace }}-CHANGELOG.txt
           echo "last commits:" >> ${{ github.workspace }}-CHANGELOG.txt
           git log --pretty=format:"%h %ad %s %d by %an" --date=short >> ${{ github.workspace }}-CHANGELOG.txt
-
-      - name: Print env
-        run: |
-          echo $BRANCH $KERNELVER $DT
 
       - name: Setup cache
         id: cache
