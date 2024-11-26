@@ -35,10 +35,17 @@ jobs:
         with:
           fetch-depth: 10
 
+      - name: update apt-repos
+        run: |
+          head -5 /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ports.sources
+          sudo sed -i.bak -e 's/^\(Suites:.*\)$/\1\nArchitectures: amd64 i386/' /etc/apt/sources.list.d/ubuntu.sources
+          sudo sed -i.bak -e 's/^URIs:.*$/URIs: http:\/\/ports.ubuntu.com\/ubuntu-ports\//' /etc/apt/sources.list.d/ports.sources
+          sudo sed -i -e 's/^\(Suites:.*\)$/\1\nArchitectures: armhf arm64/' /etc/apt/sources.list.d/ports.sources
+
       - name: Install depencies
         run: |
           sudo apt update
-          sudo apt install ccache libssl-dev u-boot-tools python3-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler libncurses5-dev libelf-dev
+          sudo apt install ccache libssl-dev libssl-dev:armhf libssl-dev:arm64 u-boot-tools python3-mako debhelper fakeroot gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu make device-tree-compiler libncurses5-dev libelf-dev
 
       - name: Setup env
         run: |
