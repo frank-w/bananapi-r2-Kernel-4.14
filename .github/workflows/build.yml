@@ -51,6 +51,7 @@ jobs:
         if: env.UBUNTU_MAJOR_VERSION == '22'
         run: |
           cat /etc/apt/sources.list
+          sudo sed -i.bak -e 's/^deb/deb [ arch=amd64,i386 ]/' /etc/apt/sources.list
           #deb [arch=amd64,i386] http://archive.ubuntu.com/ubuntu/ jammy main universe
           echo "deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports jammy main universe" | sudo tee -a /etc/apt/sources.list
 
