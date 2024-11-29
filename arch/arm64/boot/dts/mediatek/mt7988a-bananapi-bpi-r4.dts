@@ -105,9 +105,9 @@
 	};
 };
 
-&cci {
+/*&cci {
 	proc-supply = <&rt5190_buck3>;
-};
+};*/
 
 &cpu0 {
 	proc-supply = <&rt5190_buck3>;
@@ -175,11 +175,11 @@
 	status = "okay";
 };
 
-&switch {
+/*&switch {
 	status = "okay";
-};
+};*/
 
-&gsw_phy0 {
+/*&gsw_phy0 {
 	pinctrl-names = "gbe-led";
 	pinctrl-0 = <&gbe0_led0_pins>;
 };
@@ -221,7 +221,7 @@
 &gsw_phy3_led0 {
 	status = "okay";
 	color = <LED_COLOR_ID_GREEN>;
-};
+};*/
 
 &i2c0 {
 	pinctrl-names = "default";
@@ -548,10 +548,10 @@
 	status = "okay";
 };
 
-&fan {
+/*&fan {
 	pwms = <&pwm 0 50000>;
 	status = "okay";
-};
+};*/
 
 &serial0 {
 	status = "okay";
@@ -629,6 +629,6 @@
 	status = "okay";
 };
 
-&xphy {
+/*&xphy {
 	status = "okay";
-};
+};*/
