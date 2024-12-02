@@ -3444,6 +3444,7 @@ static bool phylink_phy_no_inband(struct phy_device *phy)
 static int phylink_sfp_connect_phy(void *upstream, struct phy_device *phy)
 {
 	struct phylink *pl = upstream;
+	int ret;
 	u8 mode;
 
 	/*
@@ -3468,15 +3469,6 @@ static int phylink_sfp_connect_phy(void *upstream, struct phy_device *phy)
 	ret = phylink_sfp_config_phy(pl, mode, phy);
 	if (ret < 0)
 		return ret;
-
-	interface = pl->link_config.interface;
-	ret = phylink_attach_phy(pl, phy, interface);
-	if (ret < 0)
-		return ret;
-
-	ret = phylink_bringup_phy(pl, phy, interface);
-	if (ret)
-		phy_detach(phy);
 
 	phylink_major_config(pl, false, &pl->phy_state);
 
