@@ -188,7 +188,7 @@
 	status = "okay";
 };
 
-&uart0 {
+&serial0 {
 	status = "okay";
 };
 
