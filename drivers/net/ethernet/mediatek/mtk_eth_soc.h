@@ -86,7 +86,7 @@
 #define RST_GL_PSE		BIT(0)
 
 /* Frame Engine Interrupt Status Register */
-#define MTK_INT_STATUS2		0x08
+#define MTK_FE_INT_STATUS	0x08
 #define MTK_FE_INT_ENABLE	0x0c
 #define MTK_FE_INT_FQ_EMPTY	BIT(8)
 #define MTK_FE_INT_TSO_FAIL	BIT(12)
@@ -1087,12 +1087,14 @@ struct mtk_reg_map {
 		u32	rx_ptr;		/* rx base pointer */
 		u32	rx_cnt_cfg;	/* rx max count configuration */
 		u32	pcrx_ptr;	/* rx cpu pointer */
+		u32	pdrx_ptr;	/* rx dma pointer */
 		u32	glo_cfg;	/* global configuration */
 		u32	rst_idx;	/* reset index */
 		u32	delay_irq;	/* delay interrupt */
 		u32	irq_status;	/* interrupt status */
 		u32	irq_mask;	/* interrupt mask */
 		u32	adma_rx_dbg0;
+		u32	adma_rx_dbg1;
 		u32	int_grp;
 	} pdma;
 	struct {
@@ -1106,9 +1108,11 @@ struct mtk_reg_map {
 		u32	delay_irq;	/* delay interrupt */
 		u32	fc_th;		/* flow control */
 		u32	int_grp;
+		u32	fsm;
 		u32	hred;		/* interrupt mask */
 		u32	ctx_ptr;	/* tx acquire cpu pointer */
 		u32	dtx_ptr;	/* tx acquire dma pointer */
+		u32	fwd_count;	/* tx forward count */
 		u32	crx_ptr;	/* tx release cpu pointer */
 		u32	drx_ptr;	/* tx release dma pointer */
 		u32	fq_head;	/* fq head pointer */
@@ -1290,8 +1294,16 @@ struct mtk_eth {
 		struct delayed_work monitor_work;
 		u32 wdidx;
 		u8 wdma_hang_count;
-		u8 qdma_hang_count;
-		u8 adma_hang_count;
+
+		u8 qdma_rx_hang_count;
+		u8 qdma_tx_hang_count;
+		u32 qdma_rx_pre_fq_head;
+		u32 qdma_rx_pre_fq_tail;
+
+		u8 adma_rx_hang_count;
+		u32 adma_rx_pre_drx;
+		u32 adma_rx_pre_opq;
+		u32 adma_rx_pre_fsm;
 	} reset;
 };
 

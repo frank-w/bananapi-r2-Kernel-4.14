@@ -49,12 +49,14 @@ static const struct mtk_reg_map mtk_reg_map = {
 		.rx_ptr		= 0x0900,
 		.rx_cnt_cfg	= 0x0904,
 		.pcrx_ptr	= 0x0908,
+		.pdrx_ptr	= 0x090c,
 		.glo_cfg	= 0x0a04,
 		.rst_idx	= 0x0a08,
 		.delay_irq	= 0x0a0c,
 		.irq_status	= 0x0a20,
 		.irq_mask	= 0x0a28,
 		.adma_rx_dbg0	= 0x0a38,
+		.adma_rx_dbg1	= 0x0a3c,
 		.int_grp	= 0x0a50,
 	},
 	.qdma = {
@@ -69,9 +71,11 @@ static const struct mtk_reg_map mtk_reg_map = {
 		.fc_th		= 0x1a10,
 		.tx_sch_rate	= 0x1a14,
 		.int_grp	= 0x1a20,
+		.fsm		= 0x1a34,
 		.hred		= 0x1a44,
 		.ctx_ptr	= 0x1b00,
 		.dtx_ptr	= 0x1b04,
+		.fwd_count	= 0x1b08,
 		.crx_ptr	= 0x1b10,
 		.drx_ptr	= 0x1b14,
 		.fq_head	= 0x1b20,
@@ -99,6 +103,7 @@ static const struct mtk_reg_map mt7628_reg_map = {
 		.rx_ptr		= 0x0900,
 		.rx_cnt_cfg	= 0x0904,
 		.pcrx_ptr	= 0x0908,
+		.pdrx_ptr	= 0x090c,
 		.glo_cfg	= 0x0a04,
 		.rst_idx	= 0x0a08,
 		.delay_irq	= 0x0a0c,
@@ -115,12 +120,14 @@ static const struct mtk_reg_map mt7986_reg_map = {
 		.rx_ptr		= 0x4100,
 		.rx_cnt_cfg	= 0x4104,
 		.pcrx_ptr	= 0x4108,
+		.pdrx_ptr	= 0x410c,
 		.glo_cfg	= 0x4204,
 		.rst_idx	= 0x4208,
 		.delay_irq	= 0x420c,
 		.irq_status	= 0x4220,
 		.irq_mask	= 0x4228,
 		.adma_rx_dbg0	= 0x4238,
+		.adma_rx_dbg1	= 0x423c,
 		.int_grp	= 0x4250,
 	},
 	.qdma = {
@@ -134,9 +141,11 @@ static const struct mtk_reg_map mt7986_reg_map = {
 		.delay_irq	= 0x460c,
 		.fc_th		= 0x4610,
 		.int_grp	= 0x4620,
+		.fsm		= 0x4634,
 		.hred		= 0x4644,
 		.ctx_ptr	= 0x4700,
 		.dtx_ptr	= 0x4704,
+		.fwd_count	= 0x4708,
 		.crx_ptr	= 0x4710,
 		.drx_ptr	= 0x4714,
 		.fq_head	= 0x4720,
@@ -166,12 +175,14 @@ static const struct mtk_reg_map mt7988_reg_map = {
 		.rx_ptr		= 0x6900,
 		.rx_cnt_cfg	= 0x6904,
 		.pcrx_ptr	= 0x6908,
+		.pdrx_ptr	= 0x690c,
 		.glo_cfg	= 0x6a04,
 		.rst_idx	= 0x6a08,
 		.delay_irq	= 0x6a0c,
 		.irq_status	= 0x6a20,
 		.irq_mask	= 0x6a28,
 		.adma_rx_dbg0	= 0x6a38,
+		.adma_rx_dbg1	= 0x6a3c,
 		.int_grp	= 0x6a50,
 	},
 	.qdma = {
@@ -185,9 +196,11 @@ static const struct mtk_reg_map mt7988_reg_map = {
 		.delay_irq	= 0x460c,
 		.fc_th		= 0x4610,
 		.int_grp	= 0x4620,
+		.fsm		= 0x4634,
 		.hred		= 0x4644,
 		.ctx_ptr	= 0x4700,
 		.dtx_ptr	= 0x4704,
+		.fwd_count	= 0x4708,
 		.crx_ptr	= 0x4710,
 		.drx_ptr	= 0x4714,
 		.fq_head	= 0x4720,
@@ -2388,12 +2401,12 @@ static int mtk_poll_tx(struct mtk_eth *eth, int budget)
 
 static void mtk_handle_status_irq(struct mtk_eth *eth)
 {
-	u32 status2 = mtk_r32(eth, MTK_INT_STATUS2);
+	u32 status2 = mtk_r32(eth, MTK_FE_INT_STATUS);
 
 	if (unlikely(status2 & (MTK_GDM1_AF | MTK_GDM2_AF))) {
 		mtk_stats_update(eth);
 		mtk_w32(eth, (MTK_GDM1_AF | MTK_GDM2_AF),
-			MTK_INT_STATUS2);
+			MTK_FE_INT_STATUS);
 	}
 }
 
@@ -3165,7 +3178,7 @@ static void mtk_dma_free(struct mtk_eth *eth)
 
 static bool mtk_hw_reset_check(struct mtk_eth *eth)
 {
-	u32 val = mtk_r32(eth, MTK_INT_STATUS2);
+	u32 val = mtk_r32(eth, MTK_FE_INT_STATUS);
 
 	return (val & MTK_FE_INT_FQ_EMPTY) || (val & MTK_FE_INT_RFIFO_UF) ||
 	       (val & MTK_FE_INT_RFIFO_OV) || (val & MTK_FE_INT_TSO_FAIL) ||
@@ -3787,12 +3800,15 @@ static void mtk_hw_warm_reset(struct mtk_eth *eth)
 static bool mtk_hw_check_dma_hang(struct mtk_eth *eth)
 {
 	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
-	bool gmac1_tx, gmac2_tx, gdm1_tx, gdm2_tx;
-	bool oq_hang, cdm1_busy, adma_busy;
 	bool wtx_busy, cdm_full, oq_free;
-	u32 wdidx, val, gdm1_fc, gdm2_fc;
+	u32 cur_fq_head, cur_fq_tail;
 	bool qfsm_hang, qfwd_hang;
+	bool pse_fc, qrx_fsm;
 	bool ret = false;
+	u32 wdidx, val;
+
+	u32 cur_opq, cur_fsm, cur_drx;
+	bool drx_hang = true;
 
 	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628))
 		return false;
@@ -3815,52 +3831,118 @@ static bool mtk_hw_check_dma_hang(struct mtk_eth *eth)
 			eth->reset.wdma_hang_count = 0;
 			ret = true;
 		}
-		goto out;
-	}
+	} else
+		eth->reset.wdma_hang_count = 0;
+
+	eth->reset.wdidx = wdidx;
+
+	if (ret)
+		return ret;
 
 	/* QDMA sanity checks */
-	qfsm_hang = !!mtk_r32(eth, reg_map->qdma.qtx_cfg + 0x234);
-	qfwd_hang = !mtk_r32(eth, reg_map->qdma.qtx_cfg + 0x308);
 
-	gdm1_tx = FIELD_GET(GENMASK(31, 16), mtk_r32(eth, MTK_FE_GDM1_FSM)) > 0;
-	gdm2_tx = FIELD_GET(GENMASK(31, 16), mtk_r32(eth, MTK_FE_GDM2_FSM)) > 0;
-	gmac1_tx = FIELD_GET(GENMASK(31, 24), mtk_r32(eth, MTK_MAC_FSM(0))) != 1;
-	gmac2_tx = FIELD_GET(GENMASK(31, 24), mtk_r32(eth, MTK_MAC_FSM(1))) != 1;
-	gdm1_fc = mtk_r32(eth, reg_map->gdm1_cnt + 0x24);
-	gdm2_fc = mtk_r32(eth, reg_map->gdm1_cnt + 0x64);
+	pse_fc = !!(mtk_r32(eth, MTK_FE_INT_STATUS) & BIT(PSE_QDMA_TX_PORT));
+	if (pse_fc)
+		mtk_w32(eth, BIT(PSE_QDMA_TX_PORT), MTK_FE_INT_STATUS);
 
-	if (qfsm_hang && qfwd_hang &&
-	    ((gdm1_tx && gmac1_tx && gdm1_fc < 1) ||
-	     (gdm2_tx && gmac2_tx && gdm2_fc < 1))) {
-		if (++eth->reset.qdma_hang_count > 2) {
-			eth->reset.qdma_hang_count = 0;
+	qfsm_hang = !!(mtk_r32(eth, reg_map->qdma.fsm) & 0xF00);
+	qfwd_hang = !mtk_r32(eth, reg_map->qdma.fwd_count);
+
+	if (!pse_fc && qfsm_hang && qfwd_hang) {
+		if (++eth->reset.qdma_tx_hang_count > 4) {
+			pr_info("QDMA Tx Info\n");
+			pr_info("hang count = %d\n", eth->reset.qdma_tx_hang_count);
+			pr_info("qfsm_hang = %d\n", qfsm_hang);
+			pr_info("qfwd_hang = %d\n", qfwd_hang);
+			pr_info("-- -- -- -- -- -- --\n");
+			pr_info("MTK_QDMA_FSM = 0x%x\n",
+				mtk_r32(eth, reg_map->qdma.fsm));
+			pr_info("MTK_QDMA_FWD_CNT = 0x%x\n",
+				mtk_r32(eth, reg_map->qdma.fwd_count));
+			pr_info("MTK_QDMA_FQ_CNT = 0x%x\n",
+				mtk_r32(eth, reg_map->qdma.fq_count));
+			pr_info("==============================\n");
 			ret = true;
 		}
-		goto out;
-	}
+	} else
+		eth->reset.qdma_tx_hang_count = 0;
+
+	if (ret)
+		return ret;
+
+	qrx_fsm = (mtk_r32(eth, reg_map->qdma.fsm) & 0x1F) == 0x9;
+	cur_fq_head = mtk_r32(eth, reg_map->qdma.fq_head);
+	cur_fq_tail = mtk_r32(eth, reg_map->qdma.fq_tail);
+
+	if (qrx_fsm && (cur_fq_head == eth->reset.qdma_rx_pre_fq_head) &&
+		       (cur_fq_tail == eth->reset.qdma_rx_pre_fq_tail)) {
+		if (++eth->reset.qdma_rx_hang_count > 4) {
+			pr_info("QDMA Rx Info\n");
+			pr_info("hang count = %d\n", eth->reset.qdma_rx_hang_count);
+			pr_info("MTK_QDMA_FSM = 0x%x\n",
+				mtk_r32(eth, reg_map->qdma.fsm));
+			pr_info("FQ_HEAD = 0x%x\n",
+				mtk_r32(eth, reg_map->qdma.fq_head));
+			pr_info("FQ_TAIL = 0x%x\n",
+				mtk_r32(eth, reg_map->qdma.fq_tail));
+			ret = true;
+		}
+	} else
+		eth->reset.qdma_rx_hang_count = 0;
+
+	eth->reset.qdma_rx_pre_fq_head = cur_fq_head;
+	eth->reset.qdma_rx_pre_fq_tail = cur_fq_tail;
+
+	if (ret)
+		return ret;
 
 	/* ADMA sanity checks */
-	oq_hang = !!(mtk_r32(eth, reg_map->pse_oq_sta) & GENMASK(8, 0));
-	cdm1_busy = !!(mtk_r32(eth, MTK_FE_CDM1_FSM) & GENMASK(31, 16));
-	adma_busy = !(mtk_r32(eth, reg_map->pdma.adma_rx_dbg0) & GENMASK(4, 0)) &&
-		    !(mtk_r32(eth, reg_map->pdma.adma_rx_dbg0) & BIT(6));
 
-	if (oq_hang && cdm1_busy && adma_busy) {
-		if (++eth->reset.adma_hang_count > 2) {
-			eth->reset.adma_hang_count = 0;
+	cur_opq = (mtk_r32(eth, reg_map->pse_oq_sta) & 0xFFF);
+	cur_fsm = (mtk_r32(eth, MTK_FE_CDM1_FSM) & 0xFFFF0000);
+	cur_drx = mtk_r32(eth, reg_map->pdma.pdrx_ptr);
+
+	if (cur_drx != eth->reset.adma_rx_pre_drx)
+		drx_hang = false;
+
+	/* drx remain unchanged && output queue is not zero && fs_fsm busy */
+	if (drx_hang && (cur_opq != 0 && cur_opq == eth->reset.adma_rx_pre_opq) &&
+	    (cur_fsm != 0 && cur_fsm == eth->reset.adma_rx_pre_fsm)) {
+		if (++eth->reset.adma_rx_hang_count > 4) {
+			pr_info("ADMA Rx Info\n");
+			pr_info("hang count = %d\n", eth->reset.adma_rx_hang_count);
+			pr_info("CDM1_FSM = 0x%x\n",
+				mtk_r32(eth, MTK_FE_CDM1_FSM));
+			pr_info("MTK_PSE_OQ_STA1 = 0x%x\n",
+				mtk_r32(eth, reg_map->pse_oq_sta));
+			pr_info("MTK_ADMA_RX_DBG0 = 0x%x\n",
+				mtk_r32(eth, reg_map->pdma.adma_rx_dbg0));
+			pr_info("MTK_ADMA_RX_DBG1 = 0x%x\n",
+				mtk_r32(eth, reg_map->pdma.adma_rx_dbg1));
+			pr_info("MTK_ADMA_CRX_PTR = 0x%x\n",
+				mtk_r32(eth, reg_map->pdma.pcrx_ptr));
+			pr_info("MTK_ADMA_DRX_PTR = 0x%x\n",
+				mtk_r32(eth, reg_map->pdma.pdrx_ptr));
+			pr_info("==============================\n");
 			ret = true;
 		}
-		goto out;
-	}
+	} else
+		eth->reset.adma_rx_hang_count = 0;
 
-	eth->reset.wdma_hang_count = 0;
-	eth->reset.qdma_hang_count = 0;
-	eth->reset.adma_hang_count = 0;
-out:
-	eth->reset.wdidx = wdidx;
+	eth->reset.adma_rx_pre_opq = cur_opq;
+	eth->reset.adma_rx_pre_fsm = cur_fsm;
+	eth->reset.adma_rx_pre_drx = cur_drx;
 
 	return ret;
 }
+
+/*static bool mtk_hw_check_qdma_tx_hang(struct mtk_eth *eth) {
+}
+static bool mtk_hw_check_qdma_rx_hang(struct mtk_eth *eth) {
+}
+static bool mtk_hw_check_adma_rx_hang(struct mtk_eth *eth) {
+}
+*/
 
 static void mtk_hw_reset_monitor_work(struct work_struct *work)
 {
