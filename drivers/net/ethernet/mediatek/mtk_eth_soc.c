@@ -29,6 +29,7 @@
 #include <net/page_pool/helpers.h>
 
 #include "mtk_eth_soc.h"
+#include "mtk_eth_dbg.h"
 #include "mtk_wed.h"
 
 static int mtk_msg_level = -1;
@@ -49,6 +50,7 @@ static const struct mtk_reg_map mtk_reg_map = {
 		.rx_ptr		= 0x0900,
 		.rx_cnt_cfg	= 0x0904,
 		.pcrx_ptr	= 0x0908,
+		.pdrx_ptr	= 0x090c,
 		.glo_cfg	= 0x0a04,
 		.rst_idx	= 0x0a08,
 		.delay_irq	= 0x0a0c,
@@ -69,9 +71,11 @@ static const struct mtk_reg_map mtk_reg_map = {
 		.fc_th		= 0x1a10,
 		.tx_sch_rate	= 0x1a14,
 		.int_grp	= 0x1a20,
+		.fsm		= 0x1a34,
 		.hred		= 0x1a44,
 		.ctx_ptr	= 0x1b00,
 		.dtx_ptr	= 0x1b04,
+		.fwd_count	= 0x1b08,
 		.crx_ptr	= 0x1b10,
 		.drx_ptr	= 0x1b14,
 		.fq_head	= 0x1b20,
@@ -99,6 +103,7 @@ static const struct mtk_reg_map mt7628_reg_map = {
 		.rx_ptr		= 0x0900,
 		.rx_cnt_cfg	= 0x0904,
 		.pcrx_ptr	= 0x0908,
+		.pdrx_ptr	= 0x090c,
 		.glo_cfg	= 0x0a04,
 		.rst_idx	= 0x0a08,
 		.delay_irq	= 0x0a0c,
@@ -115,6 +120,7 @@ static const struct mtk_reg_map mt7986_reg_map = {
 		.rx_ptr		= 0x4100,
 		.rx_cnt_cfg	= 0x4104,
 		.pcrx_ptr	= 0x4108,
+		.pdrx_ptr	= 0x410c,
 		.glo_cfg	= 0x4204,
 		.rst_idx	= 0x4208,
 		.delay_irq	= 0x420c,
@@ -134,9 +140,12 @@ static const struct mtk_reg_map mt7986_reg_map = {
 		.delay_irq	= 0x460c,
 		.fc_th		= 0x4610,
 		.int_grp	= 0x4620,
+		.fsm		= 0x4634,
 		.hred		= 0x4644,
+		.qtx_mib_if	= 0x46bc,
 		.ctx_ptr	= 0x4700,
 		.dtx_ptr	= 0x4704,
+		.fwd_count	= 0x4708,
 		.crx_ptr	= 0x4710,
 		.drx_ptr	= 0x4714,
 		.fq_head	= 0x4720,
@@ -166,6 +175,7 @@ static const struct mtk_reg_map mt7988_reg_map = {
 		.rx_ptr		= 0x6900,
 		.rx_cnt_cfg	= 0x6904,
 		.pcrx_ptr	= 0x6908,
+		.pdrx_ptr	= 0x690c,
 		.glo_cfg	= 0x6a04,
 		.rst_idx	= 0x6a08,
 		.delay_irq	= 0x6a0c,
@@ -185,9 +195,12 @@ static const struct mtk_reg_map mt7988_reg_map = {
 		.delay_irq	= 0x460c,
 		.fc_th		= 0x4610,
 		.int_grp	= 0x4620,
+		.fsm		= 0x4634,
 		.hred		= 0x4644,
+		.qtx_mib_if	= 0x46bc,
 		.ctx_ptr	= 0x4700,
 		.dtx_ptr	= 0x4704,
+		.fwd_count	= 0x4708,
 		.crx_ptr	= 0x4710,
 		.drx_ptr	= 0x4714,
 		.fq_head	= 0x4720,
@@ -326,8 +339,8 @@ static int mtk_mdio_busy_wait(struct mtk_eth *eth)
 	return -ETIMEDOUT;
 }
 
-static int _mtk_mdio_write_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg,
-			       u32 write_data)
+int _mtk_mdio_write_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg,
+			u32 write_data)
 {
 	int ret;
 
@@ -350,8 +363,8 @@ static int _mtk_mdio_write_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg,
 	return 0;
 }
 
-static int _mtk_mdio_write_c45(struct mtk_eth *eth, u32 phy_addr,
-			       u32 devad, u32 phy_reg, u32 write_data)
+int _mtk_mdio_write_c45(struct mtk_eth *eth, u32 phy_addr,
+			u32 devad, u32 phy_reg, u32 write_data)
 {
 	int ret;
 
@@ -386,7 +399,7 @@ static int _mtk_mdio_write_c45(struct mtk_eth *eth, u32 phy_addr,
 	return 0;
 }
 
-static int _mtk_mdio_read_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg)
+int _mtk_mdio_read_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg)
 {
 	int ret;
 
@@ -408,8 +421,8 @@ static int _mtk_mdio_read_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg)
 	return mtk_r32(eth, MTK_PHY_IAC) & PHY_IAC_DATA_MASK;
 }
 
-static int _mtk_mdio_read_c45(struct mtk_eth *eth, u32 phy_addr,
-			      u32 devad, u32 phy_reg)
+int _mtk_mdio_read_c45(struct mtk_eth *eth, u32 phy_addr,
+		       u32 devad, u32 phy_reg)
 {
 	int ret;
 
@@ -2388,12 +2401,12 @@ static int mtk_poll_tx(struct mtk_eth *eth, int budget)
 
 static void mtk_handle_status_irq(struct mtk_eth *eth)
 {
-	u32 status2 = mtk_r32(eth, MTK_INT_STATUS2);
+	u32 status2 = mtk_r32(eth, MTK_FE_INT_STATUS);
 
 	if (unlikely(status2 & (MTK_GDM1_AF | MTK_GDM2_AF))) {
 		mtk_stats_update(eth);
 		mtk_w32(eth, (MTK_GDM1_AF | MTK_GDM2_AF),
-			MTK_INT_STATUS2);
+			MTK_FE_INT_STATUS);
 	}
 }
 
@@ -3165,7 +3178,7 @@ static void mtk_dma_free(struct mtk_eth *eth)
 
 static bool mtk_hw_reset_check(struct mtk_eth *eth)
 {
-	u32 val = mtk_r32(eth, MTK_INT_STATUS2);
+	u32 val = mtk_r32(eth, MTK_FE_INT_STATUS);
 
 	return (val & MTK_FE_INT_FQ_EMPTY) || (val & MTK_FE_INT_RFIFO_UF) ||
 	       (val & MTK_FE_INT_RFIFO_OV) || (val & MTK_FE_INT_TSO_FAIL) ||
@@ -4111,6 +4124,12 @@ static int mtk_do_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	return -EOPNOTSUPP;
 }
 
+static int mtk_siocdevprivate(struct net_device *dev, struct ifreq *ifr,
+			      void __user *data, int cmd)
+{
+	return mtk_do_priv_ioctl(dev, ifr, cmd);
+}
+
 static void mtk_prepare_for_reset(struct mtk_eth *eth)
 {
 	u32 val;
@@ -4516,6 +4535,7 @@ static const struct net_device_ops mtk_netdev_ops = {
 	.ndo_set_mac_address	= mtk_set_mac_address,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_eth_ioctl		= mtk_do_ioctl,
+	.ndo_siocdevprivate	= mtk_siocdevprivate,
 	.ndo_change_mtu		= mtk_change_mtu,
 	.ndo_tx_timeout		= mtk_tx_timeout,
 	.ndo_get_stats64        = mtk_get_stats64,
@@ -5041,6 +5061,9 @@ static int mtk_probe(struct platform_device *pdev)
 	}
 	netif_napi_add(eth->dummy_dev, &eth->tx_napi, mtk_napi_tx);
 	netif_napi_add(eth->dummy_dev, &eth->rx_napi, mtk_napi_rx);
+
+	mtketh_debugfs_init(eth);
+	debug_proc_init(eth);
 
 	platform_set_drvdata(pdev, eth);
 	schedule_delayed_work(&eth->reset.monitor_work,
