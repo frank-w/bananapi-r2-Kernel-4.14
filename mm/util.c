@@ -302,7 +302,7 @@ void *memdup_user_nul(const void __user *src, size_t len)
 	 * cause pagefault, which makes it pointless to use GFP_NOFS
 	 * or GFP_ATOMIC.
 	 */
-	p = kmalloc_track_caller(len + 1, GFP_KERNEL);
+	p = kmalloc_track_caller(len + 1, GFP_KERNEL | __GFP_NOWARN);
 	if (!p)
 		return ERR_PTR(-ENOMEM);
 
