@@ -2797,12 +2797,10 @@ static int mtk_rx_alloc(struct mtk_eth *eth, int ring_no, int rx_flag)
 	} else {
 		struct mtk_tx_ring *tx_ring = &eth->tx_ring;
 
-		ring->dma = tx_ring->dma +
-			    eth->soc->tx.dma_size * eth->soc->tx.desc_size +
-			    eth->soc->rx.dma_size * eth->soc->rx.desc_size * ring_no;
-		ring->phys = tx_ring->phys +
-			    eth->soc->tx.dma_size * eth->soc->tx.desc_size +
-			    eth->soc->rx.dma_size * eth->soc->rx.desc_size * ring_no;
+		ring->dma = tx_ring->dma + tx_ring_size *
+			    eth->soc->tx.desc_size * (ring_no + 1);
+		ring->phys = tx_ring->phys + tx_ring_size *
+			     eth->soc->tx.desc_size * (ring_no + 1);
 	}
 
 	if (!ring->dma)
