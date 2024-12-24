@@ -5417,17 +5417,24 @@ static int mtk_probe(struct platform_device *pdev)
 
 	if (MTK_HAS_CAPS(eth->soc->caps, MTK_PDMA_INT)) {
 		for (i = 0; i < MTK_PDMA_IRQ_NUM; i++)
+		{
 			eth->irq_pdma[i] = platform_get_irq(pdev, i);
+			dev_err(&pdev->dev, "pdma IRQ%d resource found: %d\n", i, eth->irq_pdma[i]);
+		}
 	}
 
 	for (i = 0; i < MTK_FE_IRQ_NUM; i++) {
-		if (MTK_HAS_CAPS(eth->soc->caps, MTK_SHARED_INT) && i > 0)
+		if (MTK_HAS_CAPS(eth->soc->caps, MTK_SHARED_INT) && i > 0) {
 			eth->irq_fe[i] = eth->irq_fe[0];
-		else if (MTK_HAS_CAPS(eth->soc->caps, MTK_PDMA_INT))
+			dev_err(&pdev->dev, "reassign fe IRQ%d to 0 [%d]\n", i, eth->irq_fe[0]);
+		} else if (MTK_HAS_CAPS(eth->soc->caps, MTK_PDMA_INT)) {
 			eth->irq_fe[i] =
 				platform_get_irq(pdev, MTK_PDMA_IRQ_NUM + i);
-		else
+			dev_err(&pdev->dev, "fe IRQ%d resource found: %d\n", MTK_PDMA_IRQ_NUM + i, eth->irq_fe[i]);
+		} else {
 			eth->irq_fe[i] = platform_get_irq(pdev, i);
+			dev_err(&pdev->dev, "fe IRQ%d resource found (else): %d\n", i, eth->irq_fe[i]);
+		}
 		if (eth->irq_fe[i] < 0) {
 			dev_err(&pdev->dev, "no IRQ%d resource found\n", i);
 			err = -ENXIO;
@@ -5502,10 +5509,12 @@ static int mtk_probe(struct platform_device *pdev)
 		err = devm_request_irq(eth->dev, eth->irq_fe[0],
 				       mtk_handle_irq, 0,
 				       dev_name(eth->dev), eth);
+		dev_err(&pdev->dev, "%d assign IRQ handler for MTK_SHARED_INT to mtk_handle_irq (err:%d)\n",__LINE__,err);
 	} else {
 		err = devm_request_irq(eth->dev, eth->irq_fe[1],
 				       mtk_handle_irq_tx, 0,
 				       dev_name(eth->dev), eth);
+		dev_err(&pdev->dev, "%d assign IRQ handler for !MTK_SHARED_INT to mtk_handle_irq_rx (err:%d)\n",__LINE__,err);
 		if (err)
 			goto err_free_dev;
 
@@ -5517,6 +5526,7 @@ static int mtk_probe(struct platform_device *pdev)
 			err = devm_request_irq(eth->dev, eth->irq_pdma[0],
 					       mtk_handle_irq_rx, IRQF_SHARED,
 					       dev_name(eth->dev), &eth->rx_napi[0]);
+			dev_err(&pdev->dev, "%d assign IRQ handler for MTK_PDMA_INT to mtk_handle_irq_rx (err:%d)\n",__LINE__,err);
 			if (err)
 				goto err_free_dev;
 
@@ -5527,6 +5537,7 @@ static int mtk_probe(struct platform_device *pdev)
 							       mtk_handle_irq_rx, IRQF_SHARED,
 							       dev_name(eth->dev),
 							       &eth->rx_napi[MTK_RSS_RING(i)]);
+					dev_err(&pdev->dev, "%d assign IRQ handler for MTK_RSS %d to mtk_handle_irq_rx (err:%d)\n",__LINE__,i,err);
 					if (err)
 						goto err_free_dev;
 				}
@@ -5535,6 +5546,7 @@ static int mtk_probe(struct platform_device *pdev)
 			err = devm_request_irq(eth->dev, eth->irq_fe[2],
 					       mtk_handle_irq_rx, 0,
 					       dev_name(eth->dev), eth);
+			dev_err(&pdev->dev, "%d assign IRQ handler for !MTK_PDMA_INT to mtk_handle_irq_rx (err:%d)\n",__LINE__,err);
 			if (err)
 				goto err_free_dev;
 		}
