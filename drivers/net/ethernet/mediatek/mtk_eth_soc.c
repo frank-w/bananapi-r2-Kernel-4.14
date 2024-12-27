@@ -3471,18 +3471,23 @@ static irqreturn_t mtk_handle_irq_rx(int irq, void *priv)
 	struct mtk_eth *eth = rx_napi->eth;
 	struct mtk_rx_ring *ring = rx_napi->rx_ring;
 
+	dev_err(eth->dev, "%s:%d irq %d is called\n",__FUNCTION__,__LINE__, irq);
 	eth->rx_events++;
 	if (unlikely(!(mtk_r32(eth, eth->soc->reg_map->pdma.irq_status) &
 		       mtk_r32(eth, eth->soc->reg_map->pdma.irq_mask) &
-		       MTK_RX_DONE_INT(ring->ring_no))))
+		       MTK_RX_DONE_INT(ring->ring_no)))) {
+		dev_err(eth->dev, "%s:%d irq %d is not handled\n",__FUNCTION__,__LINE__, irq);
 		return IRQ_NONE;
+	}
 
 
 	if (likely(napi_schedule_prep(&rx_napi->napi))) {
 		mtk_rx_irq_disable(eth, MTK_RX_DONE_INT(ring->ring_no));
 		__napi_schedule(&rx_napi->napi);
+		dev_err(eth->dev, "%s:%d irq %d is disabled/resheduled\n",__FUNCTION__,__LINE__, irq);
 	}
 
+	dev_err(eth->dev, "%s:%d irq %d is handled\n",__FUNCTION__,__LINE__, irq);
 	return IRQ_HANDLED;
 }
 
