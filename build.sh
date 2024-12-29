@@ -1131,6 +1131,25 @@ if [ -n "$kernver" ]; then
 			fi
 			;;
 
+		"importfullconfig")
+			echo "import full config"
+			if [[ -e "${DEFCONFIG}" ]];then
+				tmpfile=${DEFCONFIG%/*}/temp_defconfig
+				cat $DEFCONFIG > ${tmpfile}
+				if [[ -e config_generic ]];then
+					echo "append generic config"
+					cat config_generic >> $tmpfile
+				fi
+				if [[ -e config_${board} ]];then
+					echo "append board config"
+					cat config_${board} >> $tmpfile
+				fi
+				make temp_defconfig
+			else
+				echo "file ${DEFCONFIG} not found"
+			fi
+			;;
+
 		"ic")
 			echo "menu for multiple conf-files...currently in developement"
 			files=();
