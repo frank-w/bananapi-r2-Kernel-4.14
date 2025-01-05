@@ -3572,8 +3572,9 @@ static int mtk_start_dma(struct mtk_eth *eth)
 		}
 		mtk_w32(eth, val, reg_map->qdma.glo_cfg);
 
+		val = mtk_r32(eth, reg_map->pdma.glo_cfg);
 		mtk_w32(eth,
-			MTK_RX_DMA_EN | rx_2b_offset |
+			val | MTK_RX_DMA_EN | rx_2b_offset |
 			MTK_RX_BT_32DWORDS | MTK_MULTI_EN,
 			reg_map->pdma.glo_cfg);
 	} else {
