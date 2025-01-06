@@ -175,23 +175,26 @@ static const struct mtk_reg_map mt7988_reg_map = {
 	.tx_irq_mask		= 0x461c,
 	.tx_irq_status		= 0x4618,
 	.pdma = {
-		.rx_ptr		= 0x6900,
-		.rx_cnt_cfg	= 0x6904,
-		.pcrx_ptr	= 0x6908,
-		.glo_cfg	= 0x6a04,
-		.rst_idx	= 0x6a08,
-		.delay_irq	= 0x6a0c,
-		.irq_status	= 0x6a20,
-		.irq_mask	= 0x6a28,
-		.adma_rx_dbg0	= 0x6a38,
-		.int_grp	= 0x6a50,
-		.int_grp2	= 0x6a54,
-		.int_grp3	= 0x6a58,
-		.rss_delay_int	= 0x6ac0,
-		.lro_rx_ring0_ctrl_dw1 = 0x6c78,
-		.lro_rx_ring0_ctrl_dw2 = 0x6c7c,
-		.lro_rx_ring0_ctrl_dw3 = 0x6c80,
-		.rss_glo_cfg = 0x7000,
+		.rx_ptr		= 0x4100,
+		.rx_cnt_cfg	= 0x4104,
+		.pcrx_ptr	= 0x4108,
+		.glo_cfg	= 0x4204,
+		.rst_idx	= 0x4208,
+		.delay_irq	= 0x420c,
+		.irq_status	= 0x4220,
+		.irq_mask	= 0x4228,
+		.adma_rx_dbg0	= 0x4238,
+		.int_grp	= 0x4250,
+		.int_grp2	= 0x4254,
+		.int_grp3	= 0x422c,
+		.lro_ctrl_dw0	= 0x4180,
+		.lro_rx1_dly_int = 0x4270,
+		.lro_rx2_dly_int = 0x4274,
+		.lro_rx3_dly_int = 0x4278,
+		.lro_rx_ring0_ctrl_dw1 = 0x4328,
+		.lro_rx_ring0_ctrl_dw2 = 0x432c,
+		.lro_rx_ring0_ctrl_dw3 = 0x4330,
+		.rss_glo_cfg	= 0x2800,
 	},
 	.qdma = {
 		.qtx_cfg	= 0x4400,
@@ -1273,7 +1276,7 @@ static bool mtk_rx_get_desc(struct mtk_eth *eth, struct mtk_rx_dma_v2 *rxd,
 	rxd->rxd1 = READ_ONCE(dma_rxd->rxd1);
 	rxd->rxd3 = READ_ONCE(dma_rxd->rxd3);
 	rxd->rxd4 = READ_ONCE(dma_rxd->rxd4);
-	if (mtk_is_netsys_v3_or_greater(eth)) {
+	if (0) {
 		rxd->rxd5 = READ_ONCE(dma_rxd->rxd5);
 		rxd->rxd6 = READ_ONCE(dma_rxd->rxd6);
 		rxd->rxd7 = READ_ONCE(dma_rxd->rxd7);
@@ -2164,7 +2167,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 			break;
 
 		/* find out which mac the packet come from. values start at 1 */
-		if (mtk_is_netsys_v3_or_greater(eth)) {
+		if (0) {
 			u32 val = RX_DMA_GET_SPORT_V2(trxd.rxd5);
 
 			switch (val) {
@@ -2277,7 +2280,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 		skb->dev = netdev;
 		bytes += skb->len;
 
-		if (mtk_is_netsys_v3_or_greater(eth)) {
+		if (0) {
 			reason = FIELD_GET(MTK_RXD5_PPE_CPU_REASON, trxd.rxd5);
 			hash = trxd.rxd5 & MTK_RXD5_FOE_ENTRY;
 			if (hash != MTK_RXD5_FOE_ENTRY)
@@ -2831,7 +2834,7 @@ static int mtk_rx_alloc(struct mtk_eth *eth, int ring_no, int rx_flag)
 
 		rxd->rxd3 = 0;
 		rxd->rxd4 = 0;
-		if (mtk_is_netsys_v3_or_greater(eth)) {
+		if (0) {
 			rxd->rxd5 = 0;
 			rxd->rxd6 = 0;
 			rxd->rxd7 = 0;
@@ -4312,7 +4315,7 @@ static int mtk_hw_init(struct mtk_eth *eth, bool reset)
 	else
 		mtk_hw_reset(eth);
 
-	if (mtk_is_netsys_v3_or_greater(eth)) {
+	if (0) {
 		/* Set FE to PDMAv2 if necessary */
 		val = mtk_r32(eth, MTK_FE_GLO_MISC);
 		mtk_w32(eth,  val | BIT(4), MTK_FE_GLO_MISC);
@@ -5892,10 +5895,10 @@ static const struct mtk_soc_data mt7988_data = {
 		.fq_dma_size = MTK_DMA_SIZE(4K),
 	},
 	.rx = {
-		.desc_size = sizeof(struct mtk_rx_dma_v2),
-		.dma_l4_valid = RX_DMA_L4_VALID_V2,
-		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
-		.dma_len_offset = 8,
+		.desc_size = sizeof(struct mtk_rx_dma),
+		.dma_l4_valid = RX_DMA_L4_VALID,
+		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+		.dma_len_offset = 16,
 		.dma_size = MTK_DMA_SIZE(1K),
 	},
 };
