@@ -3225,6 +3225,8 @@ static int mtk_rss_init(struct mtk_eth *eth)
 	val |= MTK_RSS_CFG_REQ;
 	mtk_w32(eth, val, reg_map->pdma.rss_glo_cfg);
 
+	msleep(500);
+
 	/* Enable RSS*/
 	val |= MTK_RSS_EN;
 	mtk_w32(eth, val, reg_map->pdma.rss_glo_cfg);
