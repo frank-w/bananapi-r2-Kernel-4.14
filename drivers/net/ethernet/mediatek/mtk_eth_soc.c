@@ -4226,6 +4226,10 @@ static void mtk_hw_reset_monitor_work(struct work_struct *work)
 	struct delayed_work *del_work = to_delayed_work(work);
 	struct mtk_eth *eth = container_of(del_work, struct mtk_eth,
 					   reset.monitor_work);
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
+	int val;
+	val = mtk_r32(eth, reg_map->pdma.rss_glo_cfg);
+	pr_info("RSS_GLO_CFG: %x\n", val);
 
 	if (test_bit(MTK_RESETTING, &eth->state))
 		goto out;
