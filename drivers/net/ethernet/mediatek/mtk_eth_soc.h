@@ -175,7 +175,7 @@
 
 /* PDMA HW LRO Control Registers */
 #define MTK_PDMA_LRO_CTRL_DW0	0x980
-#define MTK_HW_LRO_RING_NUM		3
+#define MTK_HW_LRO_RING_NUM		(mtk_is_netsys_v2_or_greater(eth) ? 4 : 3)
 #define MTK_LRO_EN			BIT(0)
 #define MTK_NON_LRO_MULTI_EN		BIT(2)
 #define MTK_LRO_DLY_INT_EN		BIT(5)
@@ -332,7 +332,10 @@
 		) \
 	)
 
-#define MTK_RX_DONE_INT(ring_no)	MTK_RX_DONE_INT_V1(ring_no)
+#define MTK_RX_DONE_INT(ring_no)		\
+	(mtk_is_netsys_v2_or_greater(eth) ?  \
+	 MTK_RX_DONE_INT_V2(ring_no) : \
+	 MTK_RX_DONE_INT_V1(ring_no))
 
 #define MTK_TX_DONE_DLY		BIT(28)
 #define MTK_RX_DONE_INT3	BIT(19)
