@@ -2268,7 +2268,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 					 ring->buf_size, DMA_FROM_DEVICE);
 
 			net_prefetch(data + NET_SKB_PAD + eth->ip_align);
-			skb = napi_build_skb(data, ring->frag_size);
+			skb = build_skb(data, ring->frag_size);
 			if (unlikely(!skb)) {
 				netdev->stats.rx_dropped++;
 				skb_free_frag(data);
