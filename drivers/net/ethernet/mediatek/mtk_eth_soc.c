@@ -547,6 +547,51 @@ static bool mtk_check_gmac23_idle(struct mtk_mac *mac)
 	return false;
 }
 
+static void mtk_set_mcr_max_rx(struct mtk_mac *mac, u32 val)
+{
+	struct mtk_eth *eth = mac->hw;
+	u32 mcr_cur, mcr_new;
+
+	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628))
+		return;
+
+	if (mtk_interface_mode_is_xgmii(mac->interface) && mac->id != MTK_GMAC1_ID) {
+		mcr_cur = mtk_r32(mac->hw, MTK_XMAC_RX_CFG2(mac->id));
+		mcr_new = mcr_cur & ~MTK_XMAC_MAX_RX_MASK;
+
+		if (val < MTK_MAX_RX_LENGTH_15K)
+			mcr_new |= val;
+		else
+			mcr_new |= MTK_MAX_RX_LENGTH_15K;
+
+		if (mcr_new != mcr_cur)
+			mtk_w32(mac->hw, mcr_new, MTK_XMAC_RX_CFG2(mac->id));
+	} else {
+		mcr_cur = mtk_r32(mac->hw, MTK_MAC_MCR(mac->id));
+		mcr_new = mcr_cur & ~(MAC_MCR_MAX_RX_MASK | MAC_MCR_MAX_RX_JUMBO(0xf));
+
+		if (val <= 1518)
+			mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_1518);
+		else if (val <= 1536)
+			mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_1536);
+		else if (val <= 1552)
+			mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_1552);
+		else if (val <= 2048) {
+			mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_2048);
+			mcr_new |= MAC_MCR_MAX_RX_JUMBO(2);
+		} else if (val <= 9216) {
+			mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_2048);
+			mcr_new |= MAC_MCR_MAX_RX_JUMBO(9);
+		} else {
+			mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_2048);
+			mcr_new |= MAC_MCR_MAX_RX_JUMBO(15);
+		}
+
+		if (mcr_new != mcr_cur)
+			mtk_w32(mac->hw, mcr_new, MTK_MAC_MCR(mac->id));
+	}
+}
+
 static struct phylink_pcs *mtk_mac_select_pcs(struct phylink_config *config,
 					      phy_interface_t interface)
 {
@@ -608,6 +653,7 @@ static void mtk_mac_config(struct phylink_config *config, unsigned int mode,
 	struct mtk_mac *mac = container_of(config, struct mtk_mac,
 					   phylink_config);
 	struct mtk_eth *eth = mac->hw;
+	struct net_device *dev = eth->netdev[mac->id];
 	int val, ge_mode, err = 0;
 	u32 i;
 
@@ -730,6 +776,7 @@ static void mtk_mac_config(struct phylink_config *config, unsigned int mode,
 	}
 
 	/* Setup gmac */
+	mtk_set_mcr_max_rx(mac, dev->mtu + MTK_RX_ETH_HLEN);
 	if (mtk_is_netsys_v3_or_greater(eth)) {
 		if (mtk_interface_mode_is_xgmii(state->interface)) {
 			mtk_w32(mac->hw, MTK_GDMA_XGDM_SEL, MTK_GDMA_EG_CTRL(mac->id));
@@ -1234,22 +1281,22 @@ static void mtk_get_stats64(struct net_device *dev,
 	storage->tx_dropped = dev->stats.tx_dropped;
 }
 
-static inline int mtk_max_frag_size(int mtu)
+static inline int mtk_max_frag_size(int mtu, int max_rx_length)
 {
-	/* make sure buf_size will be at least MTK_MAX_RX_LENGTH */
-	if (mtu + MTK_RX_ETH_HLEN < MTK_MAX_RX_LENGTH_2K)
-		mtu = MTK_MAX_RX_LENGTH_2K - MTK_RX_ETH_HLEN;
+	/* make sure buf_size will be at least max_rx_length */
+	if (mtu + MTK_RX_ETH_HLEN < max_rx_length)
+		mtu = max_rx_length - MTK_RX_ETH_HLEN;
 
 	return SKB_DATA_ALIGN(MTK_RX_HLEN + mtu) +
 		SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
 }
 
-static inline int mtk_max_buf_size(int frag_size)
+static inline int mtk_max_buf_size(int frag_size, int max_rx_length)
 {
 	int buf_size = frag_size - NET_SKB_PAD - NET_IP_ALIGN -
 		       SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
 
-	WARN_ON(buf_size < MTK_MAX_RX_LENGTH_2K);
+	WARN_ON(buf_size < max_rx_length);
 
 	return buf_size;
 }
@@ -1273,9 +1320,8 @@ static bool mtk_rx_get_desc(struct mtk_eth *eth, struct mtk_rx_dma_v2 *rxd,
 	return true;
 }
 
-static void *mtk_max_lro_buf_alloc(gfp_t gfp_mask)
+static void *mtk_max_buf_alloc(unsigned int size, gfp_t gfp_mask)
 {
-	unsigned int size = mtk_max_frag_size(MTK_MAX_LRO_RX_LENGTH);
 	unsigned long data;
 
 	data = __get_free_pages(gfp_mask | __GFP_COMP | __GFP_NOWARN,
@@ -2231,7 +2277,7 @@ static int mtk_poll_rx(struct napi_struct *napi, int budget,
 			if (ring->frag_size <= PAGE_SIZE)
 				new_data = napi_alloc_frag(ring->frag_size);
 			else
-				new_data = mtk_max_lro_buf_alloc(GFP_ATOMIC);
+				new_data = mtk_max_buf_alloc(ring->frag_size, GFP_ATOMIC);
 
 			if (unlikely(!new_data)) {
 				netdev->stats.rx_dropped++;
@@ -2745,8 +2791,8 @@ static int mtk_rx_alloc(struct mtk_eth *eth, int ring_no, int rx_flag)
 		rx_dma_size = soc->rx.dma_size;
 	}
 
-	ring->frag_size = mtk_max_frag_size(rx_data_len);
-	ring->buf_size = mtk_max_buf_size(ring->frag_size);
+	ring->frag_size = mtk_max_frag_size(rx_data_len, eth->max_rx_length);
+	ring->buf_size = mtk_max_buf_size(ring->frag_size, eth->max_rx_length);
 	ring->data = kcalloc(rx_dma_size, sizeof(*ring->data),
 			     GFP_KERNEL);
 	if (!ring->data)
@@ -2796,7 +2842,7 @@ static int mtk_rx_alloc(struct mtk_eth *eth, int ring_no, int rx_flag)
 			if (ring->frag_size <= PAGE_SIZE)
 				data = netdev_alloc_frag(ring->frag_size);
 			else
-				data = mtk_max_lro_buf_alloc(GFP_KERNEL);
+				data = mtk_max_buf_alloc(ring->frag_size, GFP_KERNEL);
 
 			if (!data)
 				return -ENOMEM;
@@ -3955,30 +4001,6 @@ static void mtk_dim_tx(struct work_struct *work)
 	dim->state = DIM_START_MEASURE;
 }
 
-static void mtk_set_mcr_max_rx(struct mtk_mac *mac, u32 val)
-{
-	struct mtk_eth *eth = mac->hw;
-	u32 mcr_cur, mcr_new;
-
-	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628))
-		return;
-
-	mcr_cur = mtk_r32(mac->hw, MTK_MAC_MCR(mac->id));
-	mcr_new = mcr_cur & ~MAC_MCR_MAX_RX_MASK;
-
-	if (val <= 1518)
-		mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_1518);
-	else if (val <= 1536)
-		mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_1536);
-	else if (val <= 1552)
-		mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_1552);
-	else
-		mcr_new |= MAC_MCR_MAX_RX(MAC_MCR_MAX_RX_2048);
-
-	if (mcr_new != mcr_cur)
-		mtk_w32(mac->hw, mcr_new, MTK_MAC_MCR(mac->id));
-}
-
 static void mtk_hw_reset(struct mtk_eth *eth)
 {
 	u32 val;
@@ -4306,8 +4328,6 @@ static int mtk_hw_init(struct mtk_eth *eth, bool reset)
 			continue;
 
 		mtk_w32(eth, MAC_MCR_FORCE_LINK_DOWN, MTK_MAC_MCR(i));
-		mtk_set_mcr_max_rx(netdev_priv(dev),
-				   dev->mtu + MTK_RX_ETH_HLEN);
 	}
 
 	/* Indicates CDM to parse the MTK special tag from CPU
@@ -4432,16 +4452,66 @@ static void mtk_uninit(struct net_device *dev)
 	mtk_rx_irq_disable(eth, ~0);
 }
 
+static int mtk_get_max_mtu(struct mtk_eth *eth, int skip_mac_id, int max_mtu)
+{
+	int i;
+
+	for (i = 0; i < MTK_MAX_DEVS; i++) {
+		if (!eth->netdev[i] || i == skip_mac_id)
+			continue;
+		max_mtu = max_t(int, max_mtu, eth->netdev[i]->mtu);
+	}
+
+	return max_mtu;
+}
+
+static inline int mtk_get_mtu_range(int rx_length)
+{
+	if (rx_length <= MTK_MAX_RX_LENGTH)
+		return MTK_MAX_RX_LENGTH;
+	else if (rx_length <= MTK_MAX_RX_LENGTH_2K)
+		return MTK_MAX_RX_LENGTH_2K;
+	else if (rx_length <= MTK_PP_MAX_BUF_SIZE)
+		return MTK_PP_MAX_BUF_SIZE;
+	else if	(rx_length <= MTK_MAX_RX_LENGTH_9K)
+		return MTK_MAX_RX_LENGTH_9K;
+
+	return MTK_MAX_RX_LENGTH_15K;
+}
+
 static int mtk_change_mtu(struct net_device *dev, int new_mtu)
 {
 	int length = new_mtu + MTK_RX_ETH_HLEN;
 	struct mtk_mac *mac = netdev_priv(dev);
 	struct mtk_eth *eth = mac->hw;
+	int cur_max_rx_length, cur_max_mtu;
+	bool need_update = false;
 
 	if (rcu_access_pointer(eth->prog) &&
 	    length > MTK_PP_MAX_BUF_SIZE) {
 		netdev_err(dev, "Invalid MTU for XDP mode\n");
 		return -EINVAL;
+	}
+
+	if (mtk_get_mtu_range(length) > eth->max_rx_length) {
+		eth->max_rx_length = mtk_get_mtu_range(length);
+		need_update = true;
+		goto out;
+	}
+
+	cur_max_mtu = mtk_get_max_mtu(eth, mac->id, new_mtu);
+	cur_max_rx_length = mtk_get_mtu_range(cur_max_mtu + MTK_RX_ETH_HLEN);
+	if (eth->max_rx_length > cur_max_rx_length) {
+		eth->max_rx_length = cur_max_rx_length;
+		need_update = true;
+	}
+
+out:
+	if (need_update) {
+		if (netif_running(dev))
+			mtk_stop(dev);
+		if (netif_running(dev))
+			mtk_open(dev);
 	}
 
 	mtk_set_mcr_max_rx(mac, length);
@@ -5142,6 +5212,8 @@ static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
 
 	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628))
 		eth->netdev[id]->max_mtu = MTK_MAX_RX_LENGTH - MTK_RX_ETH_HLEN;
+	else if (mtk_is_netsys_v2_or_greater(eth))
+		eth->netdev[id]->max_mtu = MTK_MAX_RX_LENGTH_15K - MTK_RX_ETH_HLEN;
 	else
 		eth->netdev[id]->max_mtu = MTK_MAX_RX_LENGTH_2K - MTK_RX_ETH_HLEN;
 
