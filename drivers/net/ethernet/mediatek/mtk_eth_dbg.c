@@ -352,7 +352,7 @@ static const struct file_operations qdma_queue_fops = {
 	.llseek = default_llseek,
 };
 
-int mt798x_iomap(void)
+static int mt798x_iomap(void)
 {
 	struct device_node *np = NULL;
 
@@ -372,7 +372,7 @@ int mt798x_iomap(void)
 	return 0;
 }
 
-int mt798x_iounmap(void)
+static int mt798x_iounmap(void)
 {
 	eth_debug.direct_access = 0;
 	if (eth_debug.base)
@@ -381,7 +381,7 @@ int mt798x_iounmap(void)
 	return 0;
 }
 
-void mt7530_mdio_w32(struct mtk_eth *eth, u16 reg, u32 val)
+static void mt7530_mdio_w32(struct mtk_eth *eth, u16 reg, u32 val)
 {
 	mutex_lock(&eth->mii_bus->mdio_lock);
 
@@ -396,7 +396,7 @@ void mt7530_mdio_w32(struct mtk_eth *eth, u16 reg, u32 val)
 	mutex_unlock(&eth->mii_bus->mdio_lock);
 }
 
-u32 mt7530_mdio_r32(struct mtk_eth *eth, u32 reg)
+static u32 mt7530_mdio_r32(struct mtk_eth *eth, u32 reg)
 {
 	u16 high, low;
 	u32 ret;
@@ -779,7 +779,7 @@ err:
 	return ret;
 }
 
-void mii_mgr_read_combine(struct mtk_eth *eth, u32 phy_addr, u32 phy_register,
+static void mii_mgr_read_combine(struct mtk_eth *eth, u32 phy_addr, u32 phy_register,
 			  u32 *read_data)
 {
 	if (mt7530_exist(eth) && phy_addr == 31)
@@ -789,7 +789,7 @@ void mii_mgr_read_combine(struct mtk_eth *eth, u32 phy_addr, u32 phy_register,
 		*read_data = mdiobus_read(eth->mii_bus, phy_addr, phy_register);
 }
 
-void mii_mgr_write_combine(struct mtk_eth *eth, u16 phy_addr, u16 phy_register,
+static void mii_mgr_write_combine(struct mtk_eth *eth, u16 phy_addr, u16 phy_register,
 			   u32 write_data)
 {
 	if (mt7530_exist(eth) && phy_addr == 31)
@@ -988,7 +988,7 @@ static void gdm_cnt_read(struct mtk_eth *eth)
 	pr_info("+-----------------------------------------------+\n");
 }
 
-void dump_each_port(struct seq_file *seq, struct mtk_eth *eth, u32 base)
+static void dump_each_port(struct seq_file *seq, struct mtk_eth *eth, u32 base)
 {
 	u32 pkt_cnt = 0;
 	int i = 0;
@@ -999,8 +999,8 @@ void dump_each_port(struct seq_file *seq, struct mtk_eth *eth, u32 base)
 				base = 0x408C;
 			else if ((base == 0x408C) && (i == 6))
 				base = 0x402C;
-			else
-				;
+			else {
+			};
 		}
 		pkt_cnt = mt7530_mdio_r32(eth, (base) + (i * 0x100));
 		seq_printf(seq, "%8u ", pkt_cnt);
@@ -1008,7 +1008,7 @@ void dump_each_port(struct seq_file *seq, struct mtk_eth *eth, u32 base)
 	seq_puts(seq, "\n");
 }
 
-int esw_cnt_read(struct seq_file *seq, void *v)
+static int esw_cnt_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 
@@ -1082,7 +1082,7 @@ static const struct proc_ops switch_count_fops = {
 	.proc_release = single_release
 };
 
-void xfi_mib_dump(struct seq_file *seq, u32 gdm_id)
+static void xfi_mib_dump(struct seq_file *seq, u32 gdm_id)
 {
 	struct mtk_eth *eth = g_eth;
 
@@ -1108,7 +1108,7 @@ void xfi_mib_dump(struct seq_file *seq, u32 gdm_id)
 	PRINT_FORMATTED_XFI_MIB(seq, RX_ALL_DROP_CNT, GENMASK(31, 0));
 }
 
-int xfi_cnt_read(struct seq_file *seq, void *v)
+static int xfi_cnt_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 	int i;
@@ -1141,7 +1141,7 @@ static const struct proc_ops xfi_count_fops = {
 
 static struct proc_dir_entry *proc_tx_ring, *proc_hwtx_ring, *proc_rx_ring;
 
-int tx_ring_read(struct seq_file *seq, void *v)
+static int tx_ring_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 	struct mtk_tx_ring *ring = &g_eth->tx_ring;
@@ -1187,7 +1187,7 @@ static const struct proc_ops tx_ring_fops = {
 	.proc_release = single_release
 };
 
-int hwtx_ring_read(struct seq_file *seq, void *v)
+static int hwtx_ring_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 	struct mtk_tx_dma_v2 *hwtx_ring;
@@ -1227,7 +1227,7 @@ static const struct proc_ops hwtx_ring_fops = {
 	.proc_release = single_release
 };
 
-int rx_ring_read(struct seq_file *seq, void *v)
+static int rx_ring_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 	struct mtk_rx_ring *ring = &g_eth->rx_ring[0];
@@ -1279,7 +1279,7 @@ static inline u32 mtk_dbg_r32(u32 reg)
 	return val;
 }
 
-int dbg_regs_read(struct seq_file *seq, void *v)
+static int dbg_regs_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
@@ -1451,7 +1451,7 @@ void hw_lro_stats_update(u32 ring_no, struct mtk_rx_dma_v2 *rxd)
 	hw_lro_tot_agg_cnt[idx] += agg_cnt;
 }
 
-void hw_lro_flush_stats_update(u32 ring_no, struct mtk_rx_dma_v2 *rxd)
+/*static void hw_lro_flush_stats_update(u32 ring_no, struct mtk_rx_dma_v2 *rxd)
 {
 	struct mtk_eth *eth = g_eth;
 	u32 idx, flush_reason;
@@ -1477,9 +1477,9 @@ void hw_lro_flush_stats_update(u32 ring_no, struct mtk_rx_dma_v2 *rxd)
 		hw_lro_timestamp_flush_cnt[idx]++;
 	else if ((flush_reason & 0x7) == MTK_HW_LRO_NON_RULE_FLUSH)
 		hw_lro_norule_flush_cnt[idx]++;
-}
+}*/
 
-ssize_t hw_lro_stats_write(struct file *file, const char __user *buffer,
+static ssize_t hw_lro_stats_write(struct file *file, const char __user *buffer,
 			   size_t count, loff_t *data)
 {
 	memset(hw_lro_agg_num_cnt, 0, sizeof(hw_lro_agg_num_cnt));
@@ -1498,7 +1498,7 @@ ssize_t hw_lro_stats_write(struct file *file, const char __user *buffer,
 	return count;
 }
 
-int hw_lro_stats_read_v1(struct seq_file *seq, void *v)
+static int hw_lro_stats_read_v1(struct seq_file *seq, void *v)
 {
 	int i;
 
@@ -1595,7 +1595,7 @@ int hw_lro_stats_read_v1(struct seq_file *seq, void *v)
 	return 0;
 }
 
-int hw_lro_stats_read_v2(struct seq_file *seq, void *v)
+static int hw_lro_stats_read_v2(struct seq_file *seq, void *v)
 {
 	int i;
 
@@ -1702,7 +1702,7 @@ int hw_lro_stats_read_v2(struct seq_file *seq, void *v)
 	return 0;
 }
 
-int hw_lro_stats_read_wrapper(struct seq_file *seq, void *v)
+static int hw_lro_stats_read_wrapper(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 
@@ -1727,7 +1727,7 @@ static const struct proc_ops hw_lro_stats_fops = {
 	.proc_release = single_release
 };
 
-int hwlro_agg_cnt_ctrl(int cnt)
+static int hwlro_agg_cnt_ctrl(int cnt)
 {
 	struct mtk_eth *eth = g_eth;
 	int i;
@@ -1738,7 +1738,7 @@ int hwlro_agg_cnt_ctrl(int cnt)
 	return 0;
 }
 
-int hwlro_agg_time_ctrl(int time)
+static int hwlro_agg_time_ctrl(int time)
 {
 	struct mtk_eth *eth = g_eth;
 	int i;
@@ -1749,7 +1749,7 @@ int hwlro_agg_time_ctrl(int time)
 	return 0;
 }
 
-int hwlro_age_time_ctrl(int time)
+static int hwlro_age_time_ctrl(int time)
 {
 	struct mtk_eth *eth = g_eth;
 	int i;
@@ -1759,7 +1759,7 @@ int hwlro_age_time_ctrl(int time)
 	return 0;
 }
 
-int hwlro_threshold_ctrl(int bandwidth)
+static int hwlro_threshold_ctrl(int bandwidth)
 {
 	struct mtk_eth *eth = g_eth;
 
@@ -1768,7 +1768,7 @@ int hwlro_threshold_ctrl(int bandwidth)
 	return 0;
 }
 
-int hwlro_ring_enable_ctrl(int enable)
+static int hwlro_ring_enable_ctrl(int enable)
 {
 	struct mtk_eth *eth = g_eth;
 	int i;
@@ -1781,7 +1781,7 @@ int hwlro_ring_enable_ctrl(int enable)
 	return 0;
 }
 
-int hwlro_stats_enable_ctrl(int enable)
+static int hwlro_stats_enable_ctrl(int enable)
 {
 	pr_info("[%s] %s HW LRO statistics\n", __func__, (enable) ? "Enable" : "Disable");
 	mtk_hwlro_stats_ebl = enable;
@@ -1798,7 +1798,7 @@ static const mtk_lro_dbg_func lro_dbg_func[] = {
 	[5] = hwlro_stats_enable_ctrl,
 };
 
-ssize_t hw_lro_auto_tlb_write(struct file *file, const char __user *buffer,
+static ssize_t hw_lro_auto_tlb_write(struct file *file, const char __user *buffer,
 			      size_t count, loff_t *data)
 {
 	char buf[32];
@@ -1836,7 +1836,7 @@ ssize_t hw_lro_auto_tlb_write(struct file *file, const char __user *buffer,
 	return count;
 }
 
-void hw_lro_auto_tlb_dump_v1(struct seq_file *seq, u32 index)
+static void hw_lro_auto_tlb_dump_v1(struct seq_file *seq, u32 index)
 {
 	struct mtk_eth *eth = g_eth;
 	struct mtk_lro_alt_v1 alt;
@@ -1895,7 +1895,7 @@ void hw_lro_auto_tlb_dump_v1(struct seq_file *seq, u32 index)
 	seq_printf(seq, "PRIORITY = %d\n", priority);
 }
 
-void hw_lro_auto_tlb_dump_v2(struct seq_file *seq, u32 index)
+static void hw_lro_auto_tlb_dump_v2(struct seq_file *seq, u32 index)
 {
 	struct mtk_eth *eth = g_eth;
 	struct mtk_lro_alt_v2 alt;
@@ -1966,13 +1966,14 @@ void hw_lro_auto_tlb_dump_v2(struct seq_file *seq, u32 index)
 	}
 }
 
-int hw_lro_auto_tlb_read(struct seq_file *seq, void *v)
+static int hw_lro_auto_tlb_read(struct seq_file *seq, void *v)
 {
 	struct mtk_eth *eth = g_eth;
 	int i;
 	u32 reg_val;
 	u32 reg_op1, reg_op2, reg_op3, reg_op4;
 	u32 agg_cnt, agg_time, age_time;
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
 
 	seq_puts(seq, "Usage of /proc/mtketh/hw_lro_auto_tlb:\n");
 	seq_puts(seq, "echo [function] [setting] > /proc/mtketh/hw_lro_auto_tlb\n");

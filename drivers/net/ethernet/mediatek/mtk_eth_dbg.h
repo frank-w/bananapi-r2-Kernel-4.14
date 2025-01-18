@@ -115,6 +115,7 @@
 
 #define SET_PDMA_RXRING_MAX_AGG_CNT(eth, x, y)				\
 {									\
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;		\
 	u32 reg_val1 = mtk_r32(eth, MTK_LRO_CTRL_DW2_CFG(x));		\
 	u32 reg_val2 = mtk_r32(eth, MTK_LRO_CTRL_DW3_CFG(x));		\
 	reg_val1 &= ~MTK_LRO_RING_AGG_CNT_L_MASK;			\
@@ -128,6 +129,7 @@
 
 #define SET_PDMA_RXRING_AGG_TIME(eth, x, y)				\
 {									\
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;		\
 	u32 reg_val = mtk_r32(eth, MTK_LRO_CTRL_DW2_CFG(x));		\
 	reg_val &= ~MTK_LRO_RING_AGG_TIME_MASK;				\
 	reg_val |= ((y) & 0xffff) << MTK_LRO_RING_AGG_TIME_OFFSET;	\
@@ -136,6 +138,7 @@
 
 #define SET_PDMA_RXRING_AGE_TIME(eth, x, y)				\
 {									\
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;		\
 	u32 reg_val1 = mtk_r32(eth, MTK_LRO_CTRL_DW1_CFG(x));		\
 	u32 reg_val2 = mtk_r32(eth, MTK_LRO_CTRL_DW2_CFG(x));		\
 	reg_val1 &= ~MTK_LRO_RING_AGE_TIME_L_MASK;			\
@@ -156,6 +159,7 @@
 
 #define SET_PDMA_RXRING_VALID(eth, x, y)				\
 {									\
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;		\
 	u32 reg_val = mtk_r32(eth, MTK_LRO_CTRL_DW2_CFG(x));		\
 	reg_val &= ~(0x1 << MTK_LRO_RING_RX_PORT_VLD_OFFSET);			\
 	reg_val |= ((y) & 0x1) << MTK_LRO_RING_RX_PORT_VLD_OFFSET;		\
@@ -319,6 +323,9 @@ extern int _mtk_mdio_write_c45(struct mtk_eth *eth, u32 phy_addr,
 extern int _mtk_mdio_read_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg);
 extern int _mtk_mdio_read_c45(struct mtk_eth *eth, u32 phy_addr,
 			      u32 devad, u32 phy_reg);
+
+void mtk_switch_w32(struct mtk_eth *eth, u32 val, unsigned int reg);
+u32 mtk_switch_r32(struct mtk_eth *eth, unsigned int reg);
 
 int debug_proc_init(struct mtk_eth *eth);
 void debug_proc_exit(void);

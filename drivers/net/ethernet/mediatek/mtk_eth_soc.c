@@ -332,7 +332,7 @@ static int mtk_mdio_busy_wait(struct mtk_eth *eth)
 	return -ETIMEDOUT;
 }
 
-static int _mtk_mdio_write_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg,
+int _mtk_mdio_write_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg,
 			       u32 write_data)
 {
 	int ret;
@@ -392,7 +392,7 @@ static int _mtk_mdio_write_c45(struct mtk_eth *eth, u32 phy_addr,
 	return 0;
 }
 
-static int _mtk_mdio_read_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg)
+int _mtk_mdio_read_c22(struct mtk_eth *eth, u32 phy_addr, u32 phy_reg)
 {
 	int ret;
 
