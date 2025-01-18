@@ -44,6 +44,11 @@
 			data = /incbin/("./arch/arm64/boot/dts/mediatek/mt7988a-bananapi-bpi-r4-wifi-mt7996a.dtbo");
 			type = "flat_dt";
 		};
+		fdt-ov-spi-display {
+			description = "Flattened Device Tree blob (spi display)";
+			data = /incbin/("./arch/arm64/boot/dts/mediatek/mt7988a-bananapi-bpi-r4-spidisplay.dtbo");
+			type = "flat_dt";
+		};
 /*		fdt-ov-nand{
 			data = /incbin/("./arch/arm64/boot/dts/mediatek/mt7986a-bananapi-bpi-r3-nand.dtbo");
 			type = "flat_dt";
@@ -75,7 +80,7 @@
 		conf-sd {
 			description = "Boot Linux kernel with SD FDT blob";
 			kernel = "kernel-1";
-			fdt = "fdt-base", "fdt-ov-sd";
+			fdt = "fdt-base", "fdt-ov-sd", "fdt-ov-spi-display";
 			//ramdisk = "ramdisk-1";
 			hash-1 {
 				algo = "sha1";
