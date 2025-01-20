@@ -433,21 +433,21 @@
 				};
 			};
 
-			mmc0_pins_emmc_45: mmc0-emmc-45-pins {
+			mmc_pins_emmc_45: mmc-emmc-45-pins {
 				mux {
 					function = "flash";
 					groups = "emmc_45";
 				};
 			};
 
-			mmc0_pins_emmc_51: mmc0-emmc-51-pins {
+			mmc_pins_emmc_51: mmc-emmc-51-pins {
 				mux {
 					function = "flash";
 					groups = "emmc_51";
 				};
 			};
 
-			mmc0_pins_sdcard: mmc0-sdcard-pins {
+			mmc_pins_sdcard: mmc-sdcard-pins {
 				mux {
 					function = "flash";
 					groups = "sdcard";
@@ -859,7 +859,7 @@
 			status = "disabled";
 		};
 
-		mmc0: mmc@11230000 {
+		msdc: mmc@11230000 {
 			compatible = "mediatek,mt7988-mmc";
 			reg = <0 0x11230000 0 0x1000>,
 			      <0 0x11D60000 0 0x1000>;
