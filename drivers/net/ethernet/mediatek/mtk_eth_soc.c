@@ -558,8 +558,6 @@ static void mtk_set_mcr_max_rx(struct mtk_mac *mac, u32 val)
 
 	if (mtk_interface_mode_is_xgmii(mac->interface) && mac->id != MTK_GMAC1_ID) {
 		mcr_cur = mtk_r32(mac->hw, MTK_XMAC_RX_CFG2(mac->id));
-		pr_info("MTK_XMAC_RX_CFG2(%d): %X\n", mac->id, mcr_cur);
-		return;
 		mcr_new = mcr_cur & ~MTK_XMAC_MAX_RX_MASK;
 
 		if (val < MTK_MAX_RX_LENGTH_15K)
@@ -571,8 +569,6 @@ static void mtk_set_mcr_max_rx(struct mtk_mac *mac, u32 val)
 			mtk_w32(mac->hw, mcr_new, MTK_XMAC_RX_CFG2(mac->id));
 	} else {
 		mcr_cur = mtk_r32(mac->hw, MTK_MAC_MCR(mac->id));
-		pr_info("MTK_XMAC_RX_CFG2(%d) [else]: %X\n", mac->id, mcr_cur);
-
 		mcr_new = mcr_cur & ~(MAC_MCR_MAX_RX_MASK | MAC_MCR_MAX_RX_JUMBO(0xf));
 
 		if (val <= 1518)
@@ -593,10 +589,7 @@ static void mtk_set_mcr_max_rx(struct mtk_mac *mac, u32 val)
 		}
 
 		if (mcr_new != mcr_cur)
-		{
-			pr_info("MTK_XMAC_RX_CFG2(%d) [else]: cur:%X new: %X\n", mac->id, mcr_cur,mcr_new);
 			mtk_w32(mac->hw, mcr_new, MTK_MAC_MCR(mac->id));
-		}
 	}
 }
 
