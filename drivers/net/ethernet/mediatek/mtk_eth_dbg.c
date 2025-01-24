@@ -1730,6 +1730,7 @@ static const struct proc_ops hw_lro_stats_fops = {
 static int hwlro_agg_cnt_ctrl(int cnt)
 {
 	struct mtk_eth *eth = g_eth;
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
 	int i;
 
 	for (i = 1; i < MTK_MAX_RX_RING_NUM; i++)
@@ -1741,6 +1742,7 @@ static int hwlro_agg_cnt_ctrl(int cnt)
 static int hwlro_agg_time_ctrl(int time)
 {
 	struct mtk_eth *eth = g_eth;
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
 	int i;
 
 	for (i = 1; i < MTK_MAX_RX_RING_NUM; i++)
@@ -1752,6 +1754,7 @@ static int hwlro_agg_time_ctrl(int time)
 static int hwlro_age_time_ctrl(int time)
 {
 	struct mtk_eth *eth = g_eth;
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
 	int i;
 
 	for (i = 1; i < MTK_MAX_RX_RING_NUM; i++)
@@ -1771,6 +1774,7 @@ static int hwlro_threshold_ctrl(int bandwidth)
 static int hwlro_ring_enable_ctrl(int enable)
 {
 	struct mtk_eth *eth = g_eth;
+	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
 	int i;
 
 	pr_info("[%s] %s HW LRO rings\n", __func__, (enable) ? "Enable" : "Disable");
